@@ -1,9 +1,24 @@
 const express = require("express");
 const authMiddleware = require("../middlewares/authMiddleware");
-const { getMembers } = require("../controllers/userController");
+const { getMembers, createMember } = require("../controllers/userController");
 
-const router = express.Router();
+const userRouter = express.Router();
 
-router.get("/members", authMiddleware, getMembers);
+userRouter.get("/members", authMiddleware, getMembers);
 
-module.exports = router;
+userRouter.post(
+  "/member",
+  authMiddleware,
+  (req, res, next) => {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        message: "Only admins can create members",
+      });
+    }
+
+    next();
+  },
+  createMember,
+);
+
+module.exports = userRouter;

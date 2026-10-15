@@ -282,6 +282,31 @@ const removeProjectMember = async (req, res) => {
     project.members.splice(memberIndex, 1);
     await project.save();
 
+    const io = req.app.get("io");
+
+    if (io) {
+      const projectId = project._id.toString();
+      const room = `project:${projectId}`;
+
+      // Notify remaining project members.
+      io.to(room).emit("project:memberRemoved", {
+        projectId,
+        userId,
+      });
+
+      // // Remove the revoked member's sockets from the room.
+      // const sockets = await io.in(room).fetchSockets();
+
+      // for (const socket of sockets) {
+      //   if (socket.user?.userId === userId) {
+      //     // Notify this user's socket directly before removing it.
+      //     socket.emit("project:accessRevoked", { projectId });
+
+      //     await socket.leave(room);
+      //   }
+      // }
+    }
+
     return res.status(200).json({
       message: "Member removed successfully",
       project,

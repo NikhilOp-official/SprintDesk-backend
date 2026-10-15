@@ -1,11 +1,12 @@
 const express = require("express");
-const { login } = require("../controllers/authController");
+const { login, changePassword } = require("../controllers/authController");
 const User = require("../models/User");
 const authMiddleware = require("../middlewares/authMiddleware");
 
 const authRouter = express.Router();
 
 authRouter.post("/login", login);
+authRouter.patch("/change-password", authMiddleware, changePassword);
 
 authRouter.get("/me", authMiddleware, async (req, res) => {
   try {

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Issue = require("../models/Issue");
 const Project = require("../models/Project");
 const IssueActivity = require("../models/IssueActivity");
+const { emitIssueEvent } = require("../utils/issueSocketEvents");
 
 const STATUSES = ["To Do", "In Progress", "In Review", "Done"];
 const PRIORITIES = ["Low", "Medium", "High"];
@@ -157,6 +158,10 @@ const createIssue = async (req, res) => {
     const populatedIssue = await Issue.findById(issue._id)
       .populate("creatorId", "name email")
       .populate("assigneeId", "name email");
+
+    emitIssueEvent(req, projectId, "issue:created", {
+      issue: populatedIssue,
+    });
 
     return res.status(201).json({
       message: "Issue created successfully",
@@ -472,6 +477,19 @@ const updateIssue = async (req, res) => {
       .populate("assigneeId", "name email")
       .populate("projectId", "name status");
 
+    const projectId = issue.projectId.toString();
+
+    if (changes.some((change) => change.field === "status")) {
+      emitIssueEvent(req, projectId, "issue:statusChanged", {
+        issue: populatedIssue,
+      });
+    }
+
+    if (changes.some((change) => change.field === "assigneeId")) {
+      emitIssueEvent(req, projectId, "issue:assigneeChanged", {
+        issue: populatedIssue,
+      });
+    }
     return res.status(200).json({
       message: "Issue updated successfully",
       issue: populatedIssue,
